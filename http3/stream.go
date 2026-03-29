@@ -322,14 +322,14 @@ func (s *RequestStream) ReadResponse() (*http.Response, error) {
 		s.str.CancelWrite(quic.StreamErrorCode(ErrCodeRequestIncomplete))
 		return nil, fmt.Errorf("http3: failed to read response headers: %w", err)
 	}
-	hfs, err := s.decoder.DecodeFull(headerBlock)
+	hfs, err := s.decoder.Decode(headerBlock)()
 	if err != nil {
 		// TODO: use the right error code
 		s.str.conn.CloseWithError(quic.ApplicationErrorCode(ErrCodeGeneralProtocolError), "")
 		return nil, fmt.Errorf("http3: failed to decode response headers: %w", err)
 	}
 	res := s.response
-	if err := updateResponseFromHeaders(res, hfs); err != nil {
+	if err := updateResponseFromHeaders(res, []qpack.HeaderField{hfs}); err != nil {
 		s.str.CancelRead(quic.StreamErrorCode(ErrCodeMessageError))
 		s.str.CancelWrite(quic.StreamErrorCode(ErrCodeMessageError))
 		return nil, fmt.Errorf("http3: invalid response: %w", err)

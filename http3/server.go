@@ -588,13 +588,13 @@ func (s *Server) handleRequest(conn *Conn, str datagramStream, decoder *qpack.De
 		str.CancelWrite(quic.StreamErrorCode(ErrCodeRequestIncomplete))
 		return
 	}
-	hfs, err := decoder.DecodeFull(headerBlock)
+	hfs, err := decoder.Decode(headerBlock)()
 	if err != nil {
 		// TODO: use the right error code
 		conn.CloseWithError(quic.ApplicationErrorCode(ErrCodeGeneralProtocolError), "expected first frame to be a HEADERS frame")
 		return
 	}
-	req, err := requestFromHeaders(hfs)
+	req, err := requestFromHeaders([]qpack.HeaderField{hfs})
 	if err != nil {
 		str.CancelRead(quic.StreamErrorCode(ErrCodeMessageError))
 		str.CancelWrite(quic.StreamErrorCode(ErrCodeMessageError))

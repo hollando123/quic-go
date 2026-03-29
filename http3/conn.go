@@ -69,7 +69,7 @@ func newConnection(
 		logger:           logger,
 		idleTimeout:      idleTimeout,
 		enableDatagrams:  enableDatagrams,
-		decoder:          qpack.NewDecoder(func(hf qpack.HeaderField) {}),
+		decoder:          qpack.NewDecoder(),
 		receivedSettings: make(chan struct{}),
 		streams:          make(map[quic.StreamID]*stateTrackingStream),
 		maxStreamID:      invalidStreamID,
@@ -194,11 +194,12 @@ func (c *Conn) decodeTrailers(r io.Reader, l, maxHeaderBytes uint64) (http.Heade
 	if _, err := io.ReadFull(r, b); err != nil {
 		return nil, err
 	}
-	fields, err := c.decoder.DecodeFull(b)
+	fields, err := c.decoder.Decode(b)()
 	if err != nil {
 		return nil, err
 	}
-	return parseTrailers(fields)
+
+	return parseTrailers([]qpack.HeaderField{fields})
 }
 
 // only used by the server
